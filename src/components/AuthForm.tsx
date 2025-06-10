@@ -7,14 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
-interface AuthFormProps {
-  onLogin: (user: { id: string; name: string; email: string }) => void;
-}
-
-export const AuthForm = ({ onLogin }: AuthFormProps) => {
+export const AuthForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { signIn, signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>, isSignup: boolean) => {
     e.preventDefault();
@@ -25,22 +23,47 @@ export const AuthForm = ({ onLogin }: AuthFormProps) => {
     const password = formData.get("password") as string;
     const name = formData.get("name") as string;
 
-    // Simulate authentication
-    setTimeout(() => {
-      const user = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: name || email.split("@")[0],
-        email: email,
-      };
-      
+    try {
+      if (isSignup) {
+        const { error } = await signUp(email, password, name);
+        
+        if (error) {
+          toast({
+            title: "Sign up failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Account created!",
+            description: "Please check your email to verify your account.",
+          });
+        }
+      } else {
+        const { error } = await signIn(email, password);
+        
+        if (error) {
+          toast({
+            title: "Sign in failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Welcome back!",
+            description: "Successfully signed in to Avitha",
+          });
+        }
+      }
+    } catch (error) {
       toast({
-        title: isSignup ? "Account created!" : "Welcome back!",
-        description: `Successfully ${isSignup ? "signed up" : "signed in"} to Avitha`,
+        title: "Authentication error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
       });
-      
-      onLogin(user);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -139,8 +162,9 @@ export const AuthForm = ({ onLogin }: AuthFormProps) => {
                       name="password"
                       type="password"
                       required
+                      minLength={6}
                       className="bg-white/10 border-white/20 text-white placeholder:text-purple-200"
-                      placeholder="Create a password"
+                      placeholder="Create a password (min 6 characters)"
                     />
                   </div>
                   <Button 

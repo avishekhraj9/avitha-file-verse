@@ -1,27 +1,30 @@
 
-import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { AuthForm } from "@/components/AuthForm";
 import { ChatApp } from "@/components/ChatApp";
 
 const Index = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const { user, loading, signOut } = useAuth();
 
-  const handleLogin = (userData: { id: string; name: string; email: string }) => {
-    setUser(userData);
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-  };
-
-  if (!isAuthenticated) {
-    return <AuthForm onLogin={handleLogin} />;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
   }
 
-  return <ChatApp user={user!} onLogout={handleLogout} />;
+  if (!user) {
+    return <AuthForm />;
+  }
+
+  const userData = {
+    id: user.id,
+    name: user.user_metadata?.username || user.email?.split("@")[0] || "Unknown",
+    email: user.email || ""
+  };
+
+  return <ChatApp user={userData} onLogout={signOut} />;
 };
 
 export default Index;
